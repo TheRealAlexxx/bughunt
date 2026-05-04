@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Hunt</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="app-shell">
+        <section class="game-card" aria-live="polite">
+            <header class="top-bar">
+                <div>
+                    <h1>Bug Hunt</h1>
+                    <p class="subtitle">Choose the fix that resolves the code issue.</p>
+                </div>
+                <div class="stats" aria-label="Game progress">
+                    <span id="score">Score: 0</span>
+                    <span id="progress">0/0</span>
+                </div>
+            </header>
+
+            <div class="progress-track" aria-hidden="true">
+                <div id="progressBar" class="progress-fill"></div>
+            </div>
+
+            <section id="questionView">
+                <pre class="code-block"><code id="codeBlock">Loading question...</code></pre>
+                <div id="options" class="options" role="group" aria-label="Answer choices"></div>
+                <p id="feedback" class="feedback" aria-live="assertive"></p>
+                <button id="nextBtn" class="next-btn" disabled>Next question</button>
+            </section>
+
+            <section id="endView" class="end-view hidden">
+                <p class="subtitle">Complete</p>
+                <h2 id="finalScore">Final score: 0/0</h2>
+                <p class="end-copy">Review the score and restart when you are ready.</p>
+                <button id="restartBtn" class="next-btn">Restart game</button>
+            </section>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
