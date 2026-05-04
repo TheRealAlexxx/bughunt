@@ -4,19 +4,11 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "bughunt/index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "bughunt/static/**",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/api",
       "dest": "/api/index.py"
     },
     {
@@ -27,5 +19,6 @@
       "src": "/(.*)",
       "dest": "/bughunt/index.html"
     }
-  ]
+  ],
+  "public": ["bughunt"]
 }
