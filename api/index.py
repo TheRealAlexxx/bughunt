@@ -1,18 +1,22 @@
-from flask import Flask, jsonify
 import json
-import os
 
-app = Flask(__name__)
-
-# Load questions from JSON
-questions_path = os.path.join(os.path.dirname(__file__), '..', 'bughunt', 'questions.json')
-with open(questions_path, 'r') as f:
-    QUESTIONS = json.load(f)
-
-@app.route("/api/questions")
-def get_questions():
-    return jsonify(QUESTIONS)
-
-@app.route("/api")
-def get_api():
-    return jsonify(QUESTIONS)
+def handler(request):
+    """Vercel serverless function to serve game questions"""
+    try:
+        # Read questions.json from the bughunt directory
+        with open('/var/task/bughunt/questions.json', 'r') as f:
+            questions = json.load(f)
+        
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps(questions)
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
