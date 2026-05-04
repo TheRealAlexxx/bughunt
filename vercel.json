@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "public": true,
   "builds": [
     {
       "src": "api/index.py",
@@ -19,6 +20,5 @@
       "src": "/(.*)",
       "dest": "/bughunt/index.html"
     }
-  ],
-  "public": ["bughunt"]
+  ]
 }
