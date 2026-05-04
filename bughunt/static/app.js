@@ -17,7 +17,7 @@ let selected = false;
 
 async function loadQuestions() {
     try {
-        const response = await fetch("/api/questions");
+        const response = await fetch("/api");
 
         if (!response.ok) {
             throw new Error("Question request failed");
