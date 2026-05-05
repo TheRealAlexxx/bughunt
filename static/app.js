@@ -21,6 +21,25 @@ let score = 0;
 let selected = false;
 let scoreSaved = false;
 
+function errorMessageFromPayload(payload, fallback) {
+    if (!payload) {
+        return fallback;
+    }
+    if (typeof payload === "string") {
+        return payload;
+    }
+    if (typeof payload.error === "string") {
+        return payload.error;
+    }
+    if (payload.error && typeof payload.error.message === "string") {
+        return payload.error.message;
+    }
+    if (typeof payload.message === "string") {
+        return payload.message;
+    }
+    return fallback;
+}
+
 async function loadQuestions() {
     try {
         questions = await fetchQuestions();
@@ -156,10 +175,12 @@ async function loadLeaderboard() {
         const response = await fetch("/api/leaderboard", {
             headers: { Accept: "application/json" },
         });
+        const contentType = response.headers.get("content-type") || "";
+        const payload = contentType.includes("application/json") ? await response.json() : null;
         if (!response.ok) {
-            throw new Error("Failed to load leaderboard.");
+            throw new Error(errorMessageFromPayload(payload, "Failed to load leaderboard."));
         }
-        const leaderboard = await response.json();
+        const leaderboard = payload;
         renderLeaderboard(Array.isArray(leaderboard) ? leaderboard : []);
     } catch (_error) {
         renderLeaderboard([]);
@@ -189,9 +210,10 @@ async function submitScore(event) {
             headers: { "Content-Type": "application/json", Accept: "application/json" },
             body: JSON.stringify({ name, score }),
         });
-        const data = await response.json();
+        const contentType = response.headers.get("content-type") || "";
+        const data = contentType.includes("application/json") ? await response.json() : null;
         if (!response.ok) {
-            throw new Error(data.error || "Unable to save score.");
+            throw new Error(errorMessageFromPayload(data, "Unable to save score."));
         }
 
         scoreSaved = true;
