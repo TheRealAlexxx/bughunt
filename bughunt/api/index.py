@@ -153,5 +153,6 @@ QUESTIONS = [
 
 
 @app.route("/")
+@app.route("/api")
 def handler():
     return jsonify(QUESTIONS)

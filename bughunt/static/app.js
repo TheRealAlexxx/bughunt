@@ -17,18 +17,30 @@ let selected = false;
 
 async function loadQuestions() {
     try {
-        const response = await fetch("/api");
-
-        if (!response.ok) {
-            throw new Error("Question request failed");
-        }
-
-        questions = await response.json();
+        questions = await fetchQuestions();
         restartGame();
     } catch (error) {
         codeBlock.textContent = "Unable to load questions. Please refresh and try again.";
         feedbackEl.textContent = error.message;
     }
+}
+
+async function fetchQuestions() {
+    const endpoints = ["/api", "/api/questions"];
+
+    for (const endpoint of endpoints) {
+        const response = await fetch(endpoint, {
+            headers: { Accept: "application/json" },
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+
+        if (response.ok && contentType.includes("application/json")) {
+            return response.json();
+        }
+    }
+
+    throw new Error("Question API returned HTML instead of JSON. On Vercel, make sure /api routes to /api/index.py.");
 }
 
 function restartGame() {
