@@ -9,11 +9,17 @@ const restartBtn = document.getElementById("restartBtn");
 const questionView = document.getElementById("questionView");
 const endView = document.getElementById("endView");
 const finalScoreEl = document.getElementById("finalScore");
+const leaderboardForm = document.getElementById("leaderboardForm");
+const playerNameInput = document.getElementById("playerName");
+const submitScoreBtn = document.getElementById("submitScoreBtn");
+const leaderboardMessageEl = document.getElementById("leaderboardMessage");
+const leaderboardListEl = document.getElementById("leaderboardList");
 
 let questions = [];
 let currentIndex = 0;
 let score = 0;
 let selected = false;
+let scoreSaved = false;
 
 async function loadQuestions() {
     try {
@@ -47,6 +53,9 @@ function restartGame() {
     currentIndex = 0;
     score = 0;
     selected = false;
+    scoreSaved = false;
+    leaderboardMessageEl.textContent = "";
+    submitScoreBtn.disabled = false;
     questionView.classList.remove("hidden");
     endView.classList.add("hidden");
     renderQuestion();
@@ -123,6 +132,75 @@ function showEndScreen() {
     progressEl.textContent = `${questions.length}/${questions.length}`;
     progressBar.style.width = "100%";
     finalScoreEl.textContent = `Final score: ${score}/${questions.length}`;
+    loadLeaderboard();
+}
+
+function renderLeaderboard(entries) {
+    leaderboardListEl.innerHTML = "";
+    if (!entries.length) {
+        const li = document.createElement("li");
+        li.textContent = "No scores yet. Be the first one on the board.";
+        leaderboardListEl.appendChild(li);
+        return;
+    }
+
+    entries.forEach((entry) => {
+        const li = document.createElement("li");
+        li.textContent = `${entry.name} - ${entry.score}`;
+        leaderboardListEl.appendChild(li);
+    });
+}
+
+async function loadLeaderboard() {
+    try {
+        const response = await fetch("/api/leaderboard", {
+            headers: { Accept: "application/json" },
+        });
+        if (!response.ok) {
+            throw new Error("Failed to load leaderboard.");
+        }
+        const leaderboard = await response.json();
+        renderLeaderboard(Array.isArray(leaderboard) ? leaderboard : []);
+    } catch (_error) {
+        renderLeaderboard([]);
+        leaderboardMessageEl.textContent = "Leaderboard unavailable right now.";
+    }
+}
+
+async function submitScore(event) {
+    event.preventDefault();
+    if (scoreSaved) {
+        leaderboardMessageEl.textContent = "Score already saved for this run.";
+        return;
+    }
+
+    const name = playerNameInput.value.trim();
+    if (!name) {
+        leaderboardMessageEl.textContent = "Enter your name first.";
+        return;
+    }
+
+    submitScoreBtn.disabled = true;
+    leaderboardMessageEl.textContent = "Saving score...";
+
+    try {
+        const response = await fetch("/api/leaderboard", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ name, score }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || "Unable to save score.");
+        }
+
+        scoreSaved = true;
+        leaderboardMessageEl.textContent = "Score saved.";
+        renderLeaderboard(Array.isArray(data.leaderboard) ? data.leaderboard : []);
+    } catch (error) {
+        submitScoreBtn.disabled = false;
+        leaderboardMessageEl.textContent = error.message;
+    }
 }
 
 nextBtn.addEventListener("click", () => {
@@ -131,5 +209,6 @@ nextBtn.addEventListener("click", () => {
 });
 
 restartBtn.addEventListener("click", restartGame);
+leaderboardForm.addEventListener("submit", submitScore);
 
 loadQuestions();

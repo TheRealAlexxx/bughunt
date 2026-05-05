@@ -1,7 +1,18 @@
-from flask import Flask, jsonify
+import json
+import os
+from pathlib import Path
+from threading import Lock
+from urllib import error, parse, request as urllib_request
+
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 application = app
+
+LEADERBOARD_LIMIT = 10
+LEADERBOARD_FILE = Path(__file__).with_name("leaderboard.json")
+_leaderboard_lock = Lock()
+_leaderboard_cache = []
 
 
 QUESTIONS = [
@@ -153,7 +164,137 @@ QUESTIONS = [
 ]
 
 
+def _sanitize_entry(name, score):
+    clean_name = (name or "").strip()
+    if not clean_name:
+        raise ValueError("Name is required.")
+    if len(clean_name) > 24:
+        raise ValueError("Name must be 24 characters or less.")
+    if not isinstance(score, int):
+        raise ValueError("Score must be an integer.")
+    if score < 0:
+        raise ValueError("Score must be zero or higher.")
+    return {"name": clean_name, "score": score}
+
+
+def _supabase_config():
+    url = os.getenv("SUPABASE_URL", "").rstrip("/")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    table = os.getenv("SUPABASE_LEADERBOARD_TABLE", "leaderboard_entries")
+    if not url or not key:
+        return None
+    return {"url": url, "key": key, "table": table}
+
+
+def _supabase_request(method, path, params=None, payload=None):
+    cfg = _supabase_config()
+    if not cfg:
+        raise RuntimeError("Supabase is not configured.")
+
+    base_url = f"{cfg['url']}/rest/v1/{cfg['table']}"
+    query = f"?{parse.urlencode(params)}" if params else ""
+    url = f"{base_url}{query}"
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    headers = {
+        "apikey": cfg["key"],
+        "Authorization": f"Bearer {cfg['key']}",
+        "Content-Type": "application/json",
+    }
+    if method == "POST":
+        headers["Prefer"] = "return=representation"
+
+    req = urllib_request.Request(url=url, data=body, headers=headers, method=method)
+    with urllib_request.urlopen(req, timeout=8) as response:
+        text = response.read().decode("utf-8") or "[]"
+        return json.loads(text)
+
+
+def _load_local_leaderboard():
+    global _leaderboard_cache
+    if _leaderboard_cache:
+        return _leaderboard_cache
+
+    if not LEADERBOARD_FILE.exists():
+        _leaderboard_cache = []
+        return _leaderboard_cache
+
+    try:
+        _leaderboard_cache = json.loads(LEADERBOARD_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        _leaderboard_cache = []
+    return _leaderboard_cache
+
+
+def _write_local_leaderboard(entries):
+    try:
+        LEADERBOARD_FILE.write_text(json.dumps(entries), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _get_local_entries():
+    entries = _load_local_leaderboard()
+    sorted_entries = sorted(entries, key=lambda item: (-item["score"], item.get("created_at", "")))
+    return sorted_entries[:LEADERBOARD_LIMIT]
+
+
+def _add_local_entry(entry):
+    with _leaderboard_lock:
+        entries = _load_local_leaderboard()
+        entries.append(
+            {
+                "name": entry["name"],
+                "score": entry["score"],
+                "created_at": entry.get("created_at", ""),
+            }
+        )
+        entries = sorted(entries, key=lambda item: (-item["score"], item.get("created_at", "")))[:100]
+        _leaderboard_cache[:] = entries
+        _write_local_leaderboard(entries)
+
+
+def _leaderboard_from_supabase():
+    params = {
+        "select": "name,score,created_at",
+        "order": "score.desc,created_at.asc",
+        "limit": str(LEADERBOARD_LIMIT),
+    }
+    rows = _supabase_request("GET", "leaderboard", params=params)
+    return [{"name": row["name"], "score": int(row["score"])} for row in rows]
+
+
+def _insert_supabase_entry(entry):
+    row = _supabase_request("POST", "leaderboard", payload={"name": entry["name"], "score": entry["score"]})
+    return row
+
+
 @app.route("/")
 @app.route("/api")
+@app.route("/api/questions")
 def handler():
     return jsonify(QUESTIONS)
+
+
+@app.route("/api/leaderboard", methods=["GET"])
+def get_leaderboard():
+    try:
+        return jsonify(_leaderboard_from_supabase())
+    except (RuntimeError, error.URLError, error.HTTPError, TimeoutError, ValueError):
+        return jsonify(_get_local_entries())
+
+
+@app.route("/api/leaderboard", methods=["POST"])
+def post_leaderboard():
+    body = request.get_json(silent=True) or {}
+    try:
+        entry = _sanitize_entry(body.get("name"), body.get("score"))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    try:
+        _insert_supabase_entry(entry)
+        leaderboard = _leaderboard_from_supabase()
+        return jsonify({"ok": True, "leaderboard": leaderboard}), 201
+    except (RuntimeError, error.URLError, error.HTTPError, TimeoutError, ValueError):
+        _add_local_entry(entry)
+        return jsonify({"ok": True, "leaderboard": _get_local_entries(), "storage": "local-fallback"}), 201

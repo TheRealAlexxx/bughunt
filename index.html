@@ -35,6 +35,15 @@
                 <p class="subtitle">Complete</p>
                 <h2 id="finalScore">Final score: 0/0</h2>
                 <p class="end-copy">Review the score and restart when you are ready.</p>
+                <form id="leaderboardForm" class="leaderboard-form">
+                    <input id="playerName" type="text" maxlength="24" placeholder="Your name" required>
+                    <button id="submitScoreBtn" class="next-btn" type="submit">Save score</button>
+                </form>
+                <p id="leaderboardMessage" class="subtitle leaderboard-message"></p>
+                <section class="leaderboard" aria-live="polite">
+                    <h3>Top scores</h3>
+                    <ol id="leaderboardList"></ol>
+                </section>
                 <button id="restartBtn" class="next-btn">Restart game</button>
             </section>
         </section>

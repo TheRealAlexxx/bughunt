@@ -56,7 +56,8 @@ button {
 }
 
 h1,
-h2 {
+h2,
+h3 {
     margin: 0;
     letter-spacing: 0;
 }
@@ -211,6 +212,43 @@ h2 {
     font-size: 1.05rem;
 }
 
+.leaderboard-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    margin: 0 auto 8px;
+    max-width: 460px;
+}
+
+.leaderboard-form input {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #151e2e;
+    color: var(--text);
+    padding: 12px 14px;
+}
+
+.leaderboard-message {
+    min-height: 20px;
+    margin: 8px 0 12px;
+}
+
+.leaderboard {
+    margin: 10px auto 22px;
+    max-width: 460px;
+    text-align: left;
+}
+
+.leaderboard ol {
+    margin: 10px 0 0;
+    padding-left: 22px;
+}
+
+.leaderboard li {
+    margin: 5px 0;
+    color: #dbeafe;
+}
+
 .hidden {
     display: none;
 }
@@ -239,6 +277,10 @@ h2 {
     }
 
     .options {
+        grid-template-columns: 1fr;
+    }
+
+    .leaderboard-form {
         grid-template-columns: 1fr;
     }
 }
