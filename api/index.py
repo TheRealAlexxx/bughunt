@@ -5,9 +5,16 @@ from threading import Lock
 from urllib import error, parse, request as urllib_request
 
 from flask import Flask, jsonify, request
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - optional local helper
+    load_dotenv = None
 
 app = Flask(__name__)
 application = app
+
+if load_dotenv:
+    load_dotenv()
 
 LEADERBOARD_LIMIT = 10
 LEADERBOARD_FILE = Path(__file__).with_name("leaderboard.json")
