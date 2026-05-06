@@ -7,7 +7,7 @@ from urllib import error, parse, request as urllib_request
 from flask import Flask, jsonify, request
 try:
     from dotenv import load_dotenv
-except ImportError:  # pragma: no cover - optional local helper
+except ImportError:
     load_dotenv = None
 
 app = Flask(__name__)

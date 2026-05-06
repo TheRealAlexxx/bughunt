@@ -118,9 +118,9 @@ function selectAnswer(index) {
 
     if (isCorrect) {
         score += 1;
-        feedbackEl.textContent = "Correct fix selected.";
+        feedbackEl.textContent = "Correct fix selected. YOU ARE A GENIUS.";
     } else {
-        feedbackEl.textContent = "Not quite. The green answer is the correct fix.";
+        feedbackEl.textContent = "Not quite. YOU SUCK.";
     }
 
     buttons.forEach((button, buttonIndex) => {

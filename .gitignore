@@ -2,3 +2,5 @@
 __pycache__/
 api/__pycache__/
 *.pyc
+.venv/
+.cursor/
